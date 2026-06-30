@@ -1,5 +1,5 @@
-![THD-Spatial-AI](assets/spatialai-gh-card-blue.png#gh-light-mode-only)
-![THD-Spatial-AI](assets/spatialai-gh-card-blue-dark.png#gh-dark-mode-only)
+![THD-Spatial-AI](assets/spatialai-lockup-blue.svg#gh-light-mode-only)
+![THD-Spatial-AI](assets/spatialai-lockup-blue-dark.svg#gh-dark-mode-only)
 
 # Welcome to the THD-Spatial-AI GitHub Organisation
 
