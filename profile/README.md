@@ -1,4 +1,7 @@
-# Welcome to THD-Spatial-AI
+![THD-Spatial-AI](assets/spatialai-gh-card-blue.png#gh-light-mode-only)
+![THD-Spatial-AI](assets/spatialai-gh-card-blue-dark.png#gh-dark-mode-only)
+
+# Welcome to the THD-Spatial-AI GitHub Organisation
 
 We are a group working on practical projects in spatial data processing, geoinformatics, energy modelling, and related research/software engineering topics. This organisation hosts repositories for tools, prototypes, research code, documentation, and reusable templates.
 
