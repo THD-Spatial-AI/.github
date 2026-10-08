@@ -1,0 +1,75 @@
+# Builds an MkDocs site and deploys it to GitHub Pages through Actions, with no
+# gh-pages branch. Callers grant contents: read, pages: write and id-token: write,
+# and set the repository's Pages source to "GitHub Actions".
+name: MkDocs Pages
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: Python version for the MkDocs build.
+        type: string
+        default: "3.14"
+      requirements:
+        description: Requirements file installed before the build.
+        type: string
+        default: docs/requirements.txt
+      strict:
+        description: Fail the build on MkDocs warnings.
+        type: boolean
+        default: true
+      openapi-spec:
+        description: OpenAPI file to lint with Redocly before the build. Empty skips linting.
+        type: string
+        default: ""
+      redocly-version:
+        description: Redocly CLI version used for linting.
+        type: string
+        default: "2.51.2"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # git-revision-date-localized reads each page's history.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r "${{ inputs.requirements }}"
+
+      - name: Lint OpenAPI specification
+        if: inputs.openapi-spec != ''
+        run: npx --yes "@redocly/cli@${{ inputs.redocly-version }}" lint "${{ inputs.openapi-spec }}" --format=github-actions
+
+      - name: Build site
+        run: mkdocs build ${{ inputs.strict && '--strict' || '' }}
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages-${{ github.repository }}
+      cancel-in-progress: true
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
