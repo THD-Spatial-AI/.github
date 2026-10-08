@@ -1,0 +1,76 @@
+# Builds the arc42 architecture PDF with `make` in a LaTeX container, uploads it
+# as a workflow artifact and, on a published release, attaches it to that
+# release. A repository without the documentation folder skips every step.
+# Callers grant contents: write (needed only to attach to a release).
+name: arc42 PDF
+
+on:
+  workflow_call:
+    inputs:
+      directory:
+        description: Folder holding the arc42 sources and their Makefile.
+        type: string
+        default: documentation
+      pdf:
+        description: PDF that `make` leaves in the folder.
+        type: string
+        default: documentation.pdf
+      lfs:
+        description: Pull Git LFS content (figures) before the build.
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: texlive/texlive:latest
+    permissions:
+      contents: read
+    outputs:
+      built: ${{ steps.check.outputs.built }}
+    steps:
+      - name: Install Git LFS
+        if: inputs.lfs
+        run: apt-get update -qq && apt-get install -y -qq git-lfs
+
+      - uses: actions/checkout@v7
+        with:
+          lfs: ${{ inputs.lfs }}
+
+      - name: Check for the documentation folder
+        id: check
+        run: |
+          if [ -f "${{ inputs.directory }}/Makefile" ]; then
+            echo "built=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No ${{ inputs.directory }}/Makefile; nothing to build."
+            echo "built=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the PDF
+        if: steps.check.outputs.built == 'true'
+        working-directory: ${{ inputs.directory }}
+        run: make
+
+      - uses: actions/upload-artifact@v7
+        if: steps.check.outputs.built == 'true'
+        with:
+          name: arc42-pdf
+          path: ${{ inputs.directory }}/${{ inputs.pdf }}
+          if-no-files-found: error
+
+  attach:
+    needs: build
+    if: needs.build.outputs.built == 'true' && github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: arc42-pdf
+
+      - name: Attach the PDF to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "${{ inputs.pdf }}" --clobber --repo "${{ github.repository }}"
